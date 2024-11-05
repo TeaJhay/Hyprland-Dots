@@ -3,7 +3,7 @@
 # weather info from wttr. https://github.com/chubin/wttr.in
 # Remember to add city 
 
-city=
+city=Hervey+Bay
 cachedir=~/.cache/rbn
 cachefile=${0##*/}-$1
 

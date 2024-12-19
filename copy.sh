@@ -208,7 +208,7 @@ EDITOR_SET=0
 # Check for neovim if installed
 if command -v nvim &> /dev/null; then
     printf "${INFO} ${ORANGE}neovim${RESET} is detected as installed\n"
-    read -p "${CAT} Do you want to make ${ORANGE}neovim${RESET} the default editor? (y/n): " EDITOR_CHOICE
+    read -p "${CAT} Do you want to make ${ORANGE}neovim${RESET} the default editor? (y/N): " EDITOR_CHOICE
     if [[ "$EDITOR_CHOICE" == "y" ]]; then
         update_editor "nvim"
         EDITOR_SET=1
@@ -220,7 +220,7 @@ printf "\n"
 # Check for vim if installed, but only if neovim wasn't chosen
 if [[ "$EDITOR_SET" -eq 0 ]] && command -v vim &> /dev/null; then
     printf "${INFO} ${ORANGE}vim${RESET} is detected as installed\n"
-    read -p "${CAT} Do you want to make ${ORANGE}vim${RESET} the default editor? (y/n): " EDITOR_CHOICE
+    read -p "${CAT} Do you want to make ${ORANGE}vim${RESET} the default editor? (y/N): " EDITOR_CHOICE
     if [[ "$EDITOR_CHOICE" == "y" ]]; then
         update_editor "vim"
         EDITOR_SET=1
@@ -235,14 +235,14 @@ printf "\n"
 
 # Action to do for better rofi and kitty appearance
 while true; do
-  echo "$ORANGE Select monitor resolution for better config appearance and fonts:"
-  echo "$YELLOW 1. Equal to or less than 1080p (≤ 1080p)"
-  echo "$YELLOW 2. Equal to or higher than 1440p (≥ 1440p)"
-  read -p "$CAT Enter the number of your choice: " res_choice
+  echo "$ORANGE Select monitor resolution to properly configure appearance and fonts:"
+  echo "$YELLOW   -- Enter 1. for monitor res 1440p or less (< 1440p)"
+  echo "$YELLOW   -- Enter 2. for monitors res higher than 1440p (≥ 1440p)"
+  read -p "$CAT Enter the number of your choice (1 or 2): " res_choice
 
   case $res_choice in
     1)
-        resolution="≤ 1080p"
+        resolution="< 1440p"
         break
         ;;
     2)
@@ -250,7 +250,7 @@ while true; do
         break
         ;;
     *)
-        echo "${ERROR} Invalid choice. Please enter 1 for ≤ 1080p or 2 for ≥ 1440p."
+        echo "${ERROR} Invalid choice. Please enter 1 for < 1440p or 2 for ≥ 1440p."
         ;;
   esac
 done
@@ -259,7 +259,7 @@ done
 echo "${OK} You have chosen $resolution resolution." 2>&1 | tee -a "$LOG"
 
 # Add your commands based on the resolution choice
-if [ "$resolution" == "≤ 1080p" ]; then
+if [ "$resolution" == "< 1440p" ]; then
   cp -r config/rofi/resolution/1080p/* config/rofi/
   sed -i 's/font_size 16.0/font_size 12.0/' config/kitty/kitty.conf
 
@@ -347,7 +347,7 @@ printf "\n"
 printf "${ORANGE} By default, Rainbow Borders animation is enabled.\n"
 printf "${WARN} - However, this uses a bit more CPU and Memory resources.\n"
 
-read -p "${CAT} Do you want to disable Rainbow Borders animation? (Y/N): " border_choice
+read -p "${CAT} Do you want to disable Rainbow Borders animation? (y/N): " border_choice
 if [[ "$border_choice" =~ ^[Yy]$ ]]; then
     mv config/hypr/UserScripts/RainbowBorders.sh config/hypr/UserScripts/RainbowBorders.bak.sh
     
@@ -370,6 +370,12 @@ get_backup_dirname() {
   echo "back-up_${timestamp}"
 }
 
+# Check if the ~/.config/ directory exists
+if [ ! -d "$HOME/.config" ]; then
+  echo "${ERROR} - The ~/.config directory does not exist."
+  exit 1
+fi
+
 printf "${INFO} - copying dotfiles ${BLUE}first${RESET} part\n"
 # Config directories which will ask the user whether to replace or not
 DIRS="
@@ -385,7 +391,7 @@ for DIR2 in $DIRS; do
   
   if [ -d "$DIRPATH" ]; then
     while true; do
-      read -p "${CAT} ${ORANGE}$DIR2${RESET} config found in ~/.config/ Do you want to replace ${ORANGE}$DIR2${RESET} config? (Y/N): " DIR1_CHOICE
+      read -p "${CAT} ${ORANGE}$DIR2${RESET} config found in ~/.config/ Do you want to replace ${ORANGE}$DIR2${RESET} config? (y/n): " DIR1_CHOICE
       case "$DIR1_CHOICE" in
         [Yy]* )
           BACKUP_DIR=$(get_backup_dirname)
@@ -472,7 +478,7 @@ for DIR_NAME in $DIR; do
   
   # Copy the new config
   if [ -d "config/$DIR_NAME" ]; then
-    cp -r "config/$DIR_NAME" ~/.config/"$DIR_NAME" 2>&1 | tee -a "$LOG"
+    cp -r "config/$DIR_NAME/" ~/.config/"$DIR_NAME" 2>&1 | tee -a "$LOG"
     if [ $? -eq 0 ]; then
       echo "${OK} - Copy of config for ${YELLOW}$DIR_NAME${RESET} completed!"
     else
@@ -481,20 +487,12 @@ for DIR_NAME in $DIR; do
     fi
   else
     echo "${ERROR} - Directory config/$DIR_NAME does not exist to copy."
-    exit 1
   fi
 done
 
 printf "\n"
 
-printf "${INFO} - Copying dotfiles ${BLUE}hypr directory${RESET} part\n"
-
-# Check if the config directory exists
-if [ ! -d "config" ]; then
-  echo "${ERROR} - The 'config' directory does not exist."
-  exit 1
-fi
-
+# restoration of old configs
 DIRH="hypr"
 FILES_TO_RESTORE=(
   "Monitors.conf"
@@ -503,46 +501,27 @@ FILES_TO_RESTORE=(
 )
 
 DIRPATH=~/.config/"$DIRH"
-# Backup the existing directory if it exists
-if [ -d "$DIRPATH" ]; then
-  echo -e "${NOTE} - Config for $DIRH found, attempting to back up."
-  BACKUP_DIR=$(get_backup_dirname)
-  
-  mv "$DIRPATH" "$DIRPATH-backup-$BACKUP_DIR" 2>&1 | tee -a "$LOG"
-  if [ $? -eq 0 ]; then
-    echo -e "${NOTE} - Backed up $DIRH to $DIRPATH-backup-$BACKUP_DIR."
-  else
-    echo "${ERROR} - Failed to back up ${ORANGE}$DIRH${RESET}."
-    exit 1
-  fi
-fi
+BACKUP_DIR=$(get_backup_dirname)
 
-# Copy the new config
-if [ -d "config/$DIRH" ]; then
-  cp -r "config/$DIRH" "$DIRPATH" 2>&1 | tee -a "$LOG"
-  if [ $? -eq 0 ]; then
-    echo "${OK} - Copy of config for ${ORANGE}$DIRH${RESET} completed!"
 
-    # Loop through files to check and offer restoration
-    for FILE_NAME in "${FILES_TO_RESTORE[@]}"; do
-      BACKUP_FILE="$DIRPATH-backup-$BACKUP_DIR/UserConfigs/$FILE_NAME"
-      if [ -f "$BACKUP_FILE" ]; then
-        printf "\n${INFO} Found ${YELLOW}$FILE_NAME${RESET} in hypr backup...\n"
-        read -p "${CAT} Do you want to restore ${ORANGE}$FILE_NAME${RESET} from backup? (y/n): " file_restore
-        if [[ "$file_restore" == [Yy]* ]]; then
-          cp "$BACKUP_FILE" "$DIRPATH/UserConfigs/$FILE_NAME" && echo "${OK} - $FILE_NAME restored!" 2>&1 | tee -a "$LOG"
-        else
-          echo "${NOTE} - Skipped restoring $FILE_NAME."
-        fi
+# Check if the UserConfigs directory exists in ~/.config/hypr
+if [ -d "$DIRPATH/UserConfigs" ]; then
+  # Loop through files to check and offer restoration
+  for FILE_NAME in "${FILES_TO_RESTORE[@]}"; do
+    BACKUP_FILE="$DIRPATH-backup-$BACKUP_DIR/UserConfigs/$FILE_NAME"
+    
+    if [ -f "$BACKUP_FILE" ]; then
+      printf "\n${INFO} Found ${YELLOW}$FILE_NAME${RESET} in hypr backup...\n"
+      read -p "${CAT} Do you want to restore ${ORANGE}$FILE_NAME${RESET} from backup? (y/N): " file_restore
+      if [[ "$file_restore" == [Yy]* ]]; then
+        cp "$BACKUP_FILE" "$DIRPATH/UserConfigs/$FILE_NAME" && echo "${OK} - $FILE_NAME restored!" 2>&1 | tee -a "$LOG"
+      else
+        echo "${NOTE} - Skipped restoring $FILE_NAME."
       fi
-    done
-  else
-    echo "${ERROR} - Failed to copy $DIRH."
-    exit 1
-  fi
+    fi
+  done
 else
-  echo "${ERROR} - Directory config/$DIRH does not exist to copy."
-  exit 1
+  echo "${ERROR} - UserConfigs directory does not exist in $DIRPATH. Skipping restoration."
 fi
 
 printf "\n%.0s" {1..2}
@@ -646,7 +625,7 @@ cleanup_backups() {
           echo "  - ${BACKUP##*/}"
         done
 
-        read -p "${CAT} Do you want to delete the older backups of ${ORANGE}${DIR##*/}${RESET} and keep the latest backup only? (y/n): " back_choice
+        read -p "${CAT} Do you want to delete the older backups of ${ORANGE}${DIR##*/}${RESET} and keep the latest backup only? (y/N): " back_choice
         if [[ "$back_choice" == [Yy]* ]]; then
           # Sort backups by modification time
           latest_backup="${BACKUP_DIRS[0]}"

@@ -44,6 +44,11 @@ print_color() {
 # Set the name of the log file to include the current date and time
 LOG="Copy-Logs/install-$(date +%d-%H%M%S)_dotfiles.log"
 
+# Create backup folder (TeaJhay)
+if [ ! -d ~/.config/backup ]; then
+    mkdir ~/.config/backup
+fi
+
 # update home folders
 xdg-user-dirs-update 2>&1 | tee -a "$LOG" || true
 
@@ -556,6 +561,41 @@ else
            "$HOME/.config/waybar/configs/[TOP] Default_v3" \
            "$HOME/.config/waybar/configs/[TOP] Default_v4" 2>&1 | tee -a "$LOG" || true
 fi
+
+# pam config
+echo "$(tput setaf 6) For my setup, changes need to be made to /etc/pam.d/login...$(tput sgr0)"
+printf "\n"
+
+while true; do
+  read -rp "${CAT} Would you like to backup the file and copy the config over? (y/n) " PAM
+  case $PAM in
+    [Yy])
+      echo "${NOTE} Backing up file..."
+      if [ -e /etc/pam.d/login ]; then
+        mkdir -p ~/.config/backup/pam.d
+        cp /etc/pam.d/login ~/.config/backup/pam.d/login
+        echo "${OK} File backed up." 2>&1 | tee -a "$LOG"
+        
+        if [ -e ~/Arch-Hyprland/assets/pam.d/login ]; then
+          cp ~/Arch-Hyprland/assets/pam.d/login /etc/pam.d/login
+          echo "${OK} File copied over" 2>&1 | tee -a "$LOG"
+        else
+          echo "${ERROR} Source config file not found" 2>&1 | tee -a "$LOG"
+        fi
+      else
+        echo "${ERROR} Couldn't backup file: /etc/pam.d/login not found" 2>&1 | tee -a "$LOG"
+      fi
+      break
+      ;;
+    [Nn])
+      echo "${NOTE} Skipping file backup and copy."
+      break
+      ;;
+    *)
+      echo "${ERROR} Invalid input. Please enter 'y' or 'n'."
+      ;;
+  esac
+done
 
 # additional wallpapers
 echo "$(tput setaf 6) By default only a few wallpapers are copied...$(tput sgr0)"

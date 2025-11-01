@@ -17,6 +17,13 @@
 	"tooltip": true,
 },
 
+"custom/hyprpicker": {
+	"format": "",
+	"on-click": "hyprpicker | wl-copy",
+	"tooltip": true,
+	"tooltip-format": "Hyprpicker",
+},
+
 "custom/file_manager": {
 	"format": " ",
 	"on-click": "$HOME/.config/hypr/scripts/WaybarScripts.sh --files",
@@ -95,6 +102,19 @@
 	"on-click-middle": "$HOME/.config/hypr/UserScripts/WallpaperSelect.sh",
 	"tooltip": true,
 	"tooltip-format": "Left Click: Switch Dark-Light Themes\nMiddle Click: Wallpaper Menu\nRight Click: Waybar Styles Menu",
+},
+
+// Night light (Hyprsunset)
+"custom/nightlight": {
+	"return-type": "json",
+	"exec": "$HOME/.config/hypr/scripts/Hyprsunset.sh status",
+	"interval": 3,
+	"format": "{text}",
+	"min-length": 2,
+	"on-click": "$HOME/.config/hypr/scripts/Hyprsunset.sh toggle",
+	"tooltip": true,
+	"tooltip-format": "Night light toggle",
+	"escape": false
 },
 
 "custom/lock": {
